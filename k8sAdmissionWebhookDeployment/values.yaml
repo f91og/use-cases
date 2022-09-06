@@ -1,0 +1,13 @@
+image: repo/admissionwebhookimage:tag
+
+namespace: caas-system
+secret: jiange-certs
+service: jiange
+
+privilegedUsers: ""
+
+webhook:
+  failurePolicy: Fail
+  crtPEM: |
+  keyPEM: |
+  caBundle: |

@@ -1,0 +1,8 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: system:caas:jiange
+rules:
+- apiGroups: ["networking.cpd.rakuten", "networking.istio.io"] # "" indicates the core API group
+  resources: ["domainclaims", "virtualservices"]
+  verbs: ["get", "watch", "list"]

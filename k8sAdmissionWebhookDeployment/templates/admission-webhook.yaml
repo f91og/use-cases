@@ -1,0 +1,111 @@
+{{- $cn := printf "%s.%s.svc" .Values.service .Values.namespace }}
+{{- $altName1 := printf "%s" .Values.service }}
+{{- $altName2 := printf "%s.%s" .Values.service .Values.namespace }}
+{{- $altName3 := printf "%s.%s.svc" .Values.service .Values.namespace }}
+{{- $ca := genSelfSignedCert $cn nil (list $altName1 $altName2 $altName3) 5114 }}
+apiVersion: v1
+data:
+  cert.pem: {{ ternary (b64enc (trim $ca.Cert)) (b64enc (trim .Values.webhook.crtPEM)) (empty .Values.webhook.crtPEM) }}
+  key.pem: {{ ternary (b64enc (trim $ca.Key)) (b64enc (trim .Values.webhook.keyPEM)) (empty .Values.webhook.keyPEM) }}
+kind: Secret
+metadata:
+  namespace: {{ .Values.namespace }}
+  creationTimestamp: null
+  name: {{ .Values.secret }}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: jiange
+webhooks:
+  - name: cpd.caas.jiange
+    sideEffects: NoneOnDryRun
+    failurePolicy: Fail
+    objectSelector:
+      matchExpressions:
+      - key: "app"
+        values:
+        - "jiange"
+        operator: NotIn
+    admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        name: jiange
+        namespace: caas-system
+        path: "/mutate"
+      caBundle: {{ ternary (b64enc (trim $ca.Cert)) (b64enc (trim .Values.webhook.caBundle)) (empty .Values.webhook.caBundle) }}
+    rules:
+    - operations: [ "CREATE", "DELETE", "UPDATE" ]
+      apiGroups: ["networking.k8s.io"]
+      apiVersions: ["v1"]
+      resources: ["networkpolicies"]
+    - operations: ["CREATE", "UPDATE"]
+      apiGroups: ["apps"]
+      apiVersions: ["v1"]
+      resources: ["deployments"]
+    - operations: ["CREATE", "UPDATE"]
+      apiGroups: [""]
+      apiVersions: ["v1"]
+      resources: ["services", "pods"]
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: jiange
+webhooks:
+- name: cpd.caas.jiange
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - "v1"
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - "pods"
+  - apiGroups:
+    - networking.istio.io
+    - networking.cpd.rakuten
+    - triggers.tekton.dev
+    - serving.knative.dev
+    - storage.cpd.rakuten.com
+    - apps
+    - ""
+    apiVersions:
+    - "*"
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gateways
+    - virtualservices
+    - domainclaims
+    - services
+    - eventlisteners
+    - storageclaims
+    - deployments
+  - apiGroups:
+    - networking.istio.io
+    apiVersions:
+    - "*"
+    operations:
+    - DELETE
+    resources:
+    - virtualservices
+  sideEffects: None
+  failurePolicy: Fail
+  objectSelector:
+    matchExpressions:
+    - key: "app"
+      values:
+      - "jiange"
+      operator: NotIn
+  clientConfig:
+    caBundle: {{ ternary (b64enc (trim $ca.Cert)) (b64enc (trim .Values.webhook.caBundle)) (empty .Values.webhook.caBundle) }}
+    service:
+      namespace: caas-system
+      name: jiange
+      path: /validate
+    #caBundle: <pem encoded ca cert that signs the server cert used by the webhook>

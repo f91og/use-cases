@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: caas-system
+  name: jiange
+  labels:
+    app: jiange
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: jiange
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+        checksum/config: {{ include (print $.Template.BasePath "/admission-webhook.yaml") . | sha256sum }}
+      labels:
+        app: jiange
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - name: jiange
+          image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: DEFAULT_EGRESS_HOSTS
+            value: "istio-system/istio-telemetry.istio-system.svc.cluster.local,istio-system/jaeger-agent.istio-system.svc.cluster.local,istio-system/jaeger-collector.istio-system.svc.cluster.local,istio-system/istio-citadel.istio-system.svc.cluster.local"
+          - name: IDC_NAMESPACE
+            value: caas-system
+          - name: PRESTOP_SLEEP_TIME
+            value: 30s
+          - name: SKIP_SERVICE_VALIDATION_NS
+            value: "kube-system,istio-system,cpd-monitoring,mon-aas-prod"
+          - name: SKIP_DEDICATED_NODES_VALIDATION_NS
+            value: "caas-system,caas-csi,mon-aas-prod"
+          - name: ALLOWED_USERS
+            value: {{ .Values.privilegedUsers }}
+          resources:
+            requests:
+              cpu: 500m
+              memory: 200Mi
+            limits:
+              cpu: "2"
+              memory: 1G
+          args:
+            - -tlsCertFile=/etc/webhook/certs/cert.pem
+            - -tlsKeyFile=/etc/webhook/certs/key.pem
+            - -alsologtostderr
+            - -v=4
+            - 2>&1
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              scheme: HTTPS
+              port: 443
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              scheme: HTTPS
+              port: 443
+            initialDelaySeconds: 3
+            periodSeconds: 3
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: jiange-certs
