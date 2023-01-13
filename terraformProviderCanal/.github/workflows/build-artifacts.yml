@@ -1,0 +1,25 @@
+name: S3uploads
+on:
+  release:
+    types:
+      - "published"
+
+jobs:
+  S3uploads:
+    runs-on: daas-runner
+    env:
+      BINARY_NAME: terraform-provider-canal
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "1.17.6"
+      - name: build canal provider artifacts
+        run: |
+
+          VERSION=${GITHUB_REF##*/}
+          echo "Target version is $VERSION"
+          make build
+          aws s3 cp $BINARY_NAME s3://paypay-devsecops-atlantis20210915084342421000000001/canal-provider/$VERSION/linux_amd64/ --acl bucket-owner-full-control
