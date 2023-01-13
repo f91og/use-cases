@@ -1,5 +1,5 @@
 # use-cases
-Store some common dev case, for future reuse
+Store some common dev cases, for future reuse
 
 ## Done
 - k8s admissionwebhook deployment
