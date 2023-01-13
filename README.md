@@ -3,6 +3,7 @@ Store same common dev case, for future reuse
 
 ## Done
 - k8s admissionwebhook deployment
+- terraform custom provider
 
 ## ToDo
 - terrafrom ci pipeline 
