@@ -7,6 +7,7 @@ Store some common dev cases, for future reuse
 
 ## ToDo
 - terrafrom ci pipeline 
+- cobra cli tool
 - local dev envrioment for cloud
 - etl data stream processing
 - ariflow job schedule
