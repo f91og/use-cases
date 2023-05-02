@@ -4,6 +4,7 @@ Store some common dev cases, for future reuse
 ## Done
 - k8s admissionwebhook deployment
 - terraform custom provider
+- playwright 
 
 ## ToDo
 - terrafrom ci pipeline 
