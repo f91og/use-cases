@@ -49,7 +49,7 @@ const page = await browser.newPage();
 await page.setExtraHTTPHeaders(headers);
 
 // first page of the chapter
-await page.goto(startURL);
+await page.goto(startURL, { timeout: 600000 });
 const manga = await page.$eval('h1 a', element => element.textContent);
 console.log(`start to parse manga ${manga}`);
 
@@ -87,14 +87,18 @@ for (let i = startChapter; i <= toChapter; i++) {
         // images.push(imageUrl);
         console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
 
-        let imgName = `./${manga}/${(j).toString().padStart(3, '0')}_img.png`
+        const image = `./${manga}/${(j).toString().padStart(3, '0')}_img.png`
         try {
-            await downloadWebpImg(imageUrl, {
-                'accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-                'referer': url
-            }, imgName)
+            if (!fs.existsSync(image)) {
+                await downloadWebpImg(imageUrl, {
+                    'accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                    'referer': url
+                }, image);
+            } else {
+                console.log(`skip image ${image}`)
+            }
         } catch (err) {
-            console.error(`saving ${imgName}: ${imageUrl} failed`, err)
+            console.error(`saving ${image}: ${imageUrl} failed`, err)
             process.exit(1)
         }
 
