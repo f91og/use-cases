@@ -51,10 +51,11 @@ await page.setExtraHTTPHeaders(headers);
 // first page of the chapter
 await page.goto(startURL, { timeout: 600000 });
 const manga = await page.$eval('h1 a', element => element.textContent);
-console.log(`start to parse manga ${manga}`);
+console.log(`start to download manga ${manga}`);
 
-if (!fs.existsSync(manga)) {
-    fs.mkdirSync(manga, { recursive: true });
+const mangaFolder = `./manga/${manga}`
+if (!fs.existsSync(mangaFolder)) {
+    fs.mkdirSync(mangaFolder, { recursive: true });
 }
 
 const restrictButton = await page.$('#checkAdult');
@@ -87,7 +88,7 @@ for (let i = startChapter; i <= toChapter; i++) {
         // images.push(imageUrl);
         console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
 
-        const image = `./${manga}/${(j).toString().padStart(3, '0')}_img.png`
+        const image = `./${mangaFolder}/${(j).toString().padStart(3, '0')}_img.png`
         try {
             if (!fs.existsSync(image)) {
                 await downloadWebpImg(imageUrl, {
@@ -118,7 +119,7 @@ for (let i = startChapter; i <= toChapter; i++) {
 
     console.info(`merging chapter${i}`);
     // zip all images 
-    const zipResult = shell.exec(`zip -0 -rq ./${manga}/chapter${i}.zip ./${manga}/*.png`);
+    const zipResult = shell.exec(`zip -0 -rq ./${mangaFolder}/chapter${i}.zip ./${mangaFolder}/*.png`);
     if (zipResult.code !== 0) {
         console.error(`Error in zip images for chapter${i}`, zipResult.stderr);
         process.exit(1);
@@ -133,7 +134,7 @@ for (let i = startChapter; i <= toChapter; i++) {
     // } else {
     //     shell.exec(`rm ./${manga}/*.png`);
     // }
-    shell.exec(`rm ./${manga}/*.png`);
+    shell.exec(`rm ./${mangaFolder}/*.png`);
     console.info(`saved chapter${i}`);
 
     if (i >= toChapter) break;
