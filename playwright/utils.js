@@ -15,10 +15,20 @@ import fetch from 'node-fetch';
 // }
 
 async function downloadWebpImg(url, headers, filePath) {
-    const response = await fetch(url, {headers: headers});
+    let response
 
-    if (!response.ok) {
-        throw new Error(`Could not fetch image, (status ${response.status}`);
+    for (let i = 0; i < 3; i++) {
+        try {
+            response = await fetch(url, {headers: headers});
+            if (response.ok) break;
+        } catch (err) {
+            console.error(`Error fetching ${url}: ${err}`);
+        }
+        // await new Promise((resolve) => setTimeout(resolve, interval));
+
+        if (i == 2) {
+            throw new Error(`Could not download image, (status ${response.status}`);
+        }
     }
 
     const data = await response.arrayBuffer()
