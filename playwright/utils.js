@@ -19,15 +19,14 @@ async function downloadWebpImg(url, headers, filePath) {
 
     for (let i = 0; i < 3; i++) {
         try {
-            response = await fetch(url, {headers: headers});
+            response = await fetch(url, { headers: headers });
             if (response.ok) break;
         } catch (err) {
-            console.error(`Error fetching ${url}: ${err}`);
+            console.error(`error fetching ${url}: ${err}`);
         }
         // await new Promise((resolve) => setTimeout(resolve, interval));
-
         if (i == 2) {
-            throw new Error(`Could not download image, (status ${response.status}`);
+            throw new Error(`download image failed, (status ${response.status}`);
         }
     }
 
@@ -35,7 +34,7 @@ async function downloadWebpImg(url, headers, filePath) {
     const dataBuffer = Buffer.from(data, 'base64')
     fs.writeFileSync(filePath, dataBuffer, function (err) {//用fs写入文件
         if (err) {
-            throw new Error(`Could not write image, ${err}`);
+            throw new Error(`write image failed, ${err}`);
         } else {
             console.log(`image ${url} wrote to file ${filePath}`);
         }

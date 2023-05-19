@@ -14,14 +14,13 @@ if (args.length < 2) {
     process.exit(1);
 }
 
-const startURL = args[0];
-const toChapter = parseInt(args[1]);
+const startChapterUrl = args[0];
 const startChapter = args.length == 3 ? args[2] : 1;
+const toChapter = parseInt(args[1]);
 
-
-// const matchChapter = startURL.match(/\/(\d+)\.html/);
+// const matchChapter = startChapterUrl.match(/\/(\d+)\.html/);
 // const chapterNumber = matchChapter ? matchChapter[1] : null;
-// const matchPrefix = startURL.match(/(.*\/)\d+\.html/);
+// const matchPrefix = startChapterUrl.match(/(.*\/)\d+\.html/);
 // const prefix = matchPrefix ? matchPrefix[1] : null;
 
 // if (chapterNumber !== null && prefix !== null) {
@@ -49,14 +48,14 @@ const page = await browser.newPage();
 await page.setExtraHTTPHeaders(headers);
 
 // first page of the chapter
-await page.goto(startURL, { timeout: 600000 });
+await page.goto(startChapterUrl, { timeout: 600000 });
 const manga = await page.$eval('h1 a', element => element.textContent);
 console.log(`start to download manga ${manga}`);
 
-const mangaFolder = `./manga/${manga}`
-if (!fs.existsSync(mangaFolder)) {
-    fs.mkdirSync(mangaFolder, { recursive: true });
-}
+const mangaFolder = `./manga/${manga}`;
+// if (!fs.existsSync(mangaFolder)) {
+//     fs.mkdirSync(mangaFolder, { recursive: true });
+// }
 
 const restrictButton = await page.$('#checkAdult');
 if (restrictButton) {
@@ -65,30 +64,34 @@ if (restrictButton) {
 }
 
 for (let i = startChapter; i <= toChapter; i++) {
-    console.info(`saving chapter${i}`)
-    // Create a map to store chapter number and image url
-    // const images = [];
+    console.info(`saving chapter${i}`);
 
-    const lastPagesValue = await page.$eval('#pageSelect', select => select.options[select.options.length - 1].value);
-    if (!lastPagesValue) {
-        console.error(`get pages for chapter${i} failed`)
-        break;
-    } else {
-        console.info(`pages for chapter${i}:`, lastPagesValue)
+    const currentChapter = await page.$eval('h2', element => element.textContent);
+    const lastPage = parseInt(await page.$eval('#pageSelect', select => select.options[select.options.length - 1].value));
+
+    // if (!lastPagesValue) {
+    //     console.error(`get pages for failed chapter${i}`); break;
+    // }
+
+    console.info(`pages for ${currentChapter}`, lastPage);
+
+    if (!verifyChapter(currentChapter, `第${i.toString().padStart(2, '0')}卷`, lastPage)) break;
+
+    const chapterFolder = `${mangaFolder}/${currentChapter}`
+    if (!fs.existsSync(chapterFolder)) {
+        fs.mkdirSync(chapterFolder, { recursive: true });
     }
-    const lastPage = parseInt(lastPagesValue);
-    const url = page.url().split('#')[0]
 
-    // save image for a chapter
+    const url = page.url().split('#')[0];
+
+    // save images for a chapter
     for (let j = 1; j <= lastPage; j++) {
         // Get the image url for the current page
         const imageUrl = await page.$eval('#mangaFile', img => img.src);
 
-        // Add the chapter number and image url to the map
-        // images.push(imageUrl);
         console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
 
-        const image = `./${mangaFolder}/${(j).toString().padStart(3, '0')}_img.png`
+        const image = `./${chapterFolder}/${j.toString().padStart(3, '0')}_img.png`;
         try {
             if (!fs.existsSync(image)) {
                 await downloadWebpImg(imageUrl, {
@@ -96,11 +99,11 @@ for (let i = startChapter; i <= toChapter; i++) {
                     'referer': url
                 }, image);
             } else {
-                console.log(`skip image ${image}`)
+                console.log(`skip ${image}`);
             }
         } catch (err) {
-            console.error(`saving ${image}: ${imageUrl} failed`, err)
-            process.exit(1)
+            console.error(`saving ${image}: ${imageUrl} failed`, err);
+            process.exit(1);
         }
 
         if (j !== lastPage) {
@@ -117,46 +120,31 @@ for (let i = startChapter; i <= toChapter; i++) {
     // }
     // console.log(chapterImageMap);
 
-    console.info(`merging chapter${i}`);
     // zip all images 
-    const zipResult = shell.exec(`zip -0 -rq ./${mangaFolder}/chapter${i}.zip ./${mangaFolder}/*.png`);
-    if (zipResult.code !== 0) {
-        console.error(`Error in zip images for chapter${i}`, zipResult.stderr);
-        process.exit(1);
-    }
-
-    // merge to 1 pdf: magick ./第01卷/*.webp output.pdf
-    // const chapter = `chapter${i.toString().padStart(2, '0')}.pdf`;
-    // const magicResult = shell.exec(`magick ./${manga}/*.png ./${manga}/${chapter}`);
-    // if (magicResult.code !== 0) {
-    //     console.error(`Error in magick ${chapter}`, magicResult.stderr);
+    // const zipResult = shell.exec(`zip -0 -rq ./${mangaFolder}/chapter${i}.zip ./${mangaFolder}/*.png`);
+    // if (zipResult.code !== 0) {
+    //     console.error(`Error in zip images for chapter${i}`, zipResult.stderr);
     //     process.exit(1);
-    // } else {
-    //     shell.exec(`rm ./${manga}/*.png`);
     // }
-    shell.exec(`rm ./${mangaFolder}/*.png`);
+
+    // shell.exec(`rm ./${mangaFolder}/*.png`);
+
     console.info(`saved chapter${i}`);
 
     if (i >= toChapter) break;
     await page.click('a.btn-red.nextC');
     await page.waitForNavigation({ timeout: 600000 });
-
-    // const maxRetries = 4;
-    // let retries = 0;
-    // while (retries < maxRetries) {
-    //     try {
-    //         await page.waitForNavigation({ timeout: 600000 });
-    //         break
-    //     } catch (error) {
-    //         console.log(`navigation timeout, retrying... (${i}/${maxretries})`);
-    //         await page.reload();
-    //     }
-    // }
-
-    // if (retries >= maxretries) {
-    //     console.log('navigation failed after max retries');
-    //     break;
-    // }
 }
 
 await browser.close()
+
+function verifyChapter(currentChapter, chapterSaving, lastPage) {
+    if (lastPage < 70) {
+        console.error(`no enough chapter pages: ${lastPage}`); return false;
+    }
+    if (currentChapter.startsWith("第") && currentChapter !== chapterSaving) {
+        console.error(`chapter error, current: ${currentChapter}, saving: ${chapterSaving}`); return false;
+    }
+
+    return true;
+}
