@@ -91,7 +91,7 @@ for (let i = startChapter; i <= toChapter; i++) {
 
         console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
 
-        const image = `./${chapterFolder}/${j.toString().padStart(3, '0')}_img.png`;
+        const image = `${chapterFolder}/${j.toString().padStart(3, '0')}_img.png`;
         try {
             if (!fs.existsSync(image)) {
                 await downloadWebpImg(imageUrl, {
