@@ -83,6 +83,7 @@ for (let i = startChapter; i <= toChapter; i++) {
     }
 
     const url = page.url().split('#')[0];
+    console.log(`chapter url: ${url}`);
 
     // save images for a chapter
     for (let j = 1; j <= lastPage; j++) {
