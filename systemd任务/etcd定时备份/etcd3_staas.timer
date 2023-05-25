@@ -1,0 +1,11 @@
+[Unit]
+Description=Run etcd3 staas
+Documentation=
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target

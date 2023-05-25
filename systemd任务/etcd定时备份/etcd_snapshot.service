@@ -1,0 +1,14 @@
+## K8S-VERSION-UP-v1.20.12
+# etcd3_snapshot (this unit)  : etcdctl snapshot save, which is safer
+# etcd3_backup (another unit) : copy directory, just in case
+[Unit]
+Description=snapshot etcd3 data
+After=docker.service
+
+[Service]
+ExecStartPre=/bin/mkdir -p /opt/etcd3_snapshot/
+ExecStartPre=/bin/sh -c "/bin/systemctl set-environment SNAPSHOT=$(echo snapshot.db.$(/bin/hostname).$(/bin/date +%%Y%%m%%d-%%H%%M%%S))"
+ExecStart=/bin/bash -c "cd /opt/etcd3_snapshot/ && ETCDCTL_API=3 /bin/ionice -c2 -n7 /bin/nice -n19 /bin/etcdctl --endpoints https://127.0.0.1:2379 --cacert /etc/kubernetes/ssl/ca.pem --cert /etc/kubernetes/ssl/etcd.pem  --key /etc/kubernetes/ssl/etcd-key.pem snapshot save ${SNAPSHOT} && tar -czf ${SNAPSHOT}.tar.gz ${SNAPSHOT} && rm ${SNAPSHOT}"
+ExecStartPost=/bin/find /opt/etcd3_snapshot/ -name "snapshot.db.*.tar.gz" -mtime +6 -delete
+Restart=no
+Type=oneshot

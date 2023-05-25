@@ -1,0 +1,12 @@
+## K8S-VERSION-UP-v1.20.12
+[Unit]
+Description=Run etcd3 snapshot
+Documentation=
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
