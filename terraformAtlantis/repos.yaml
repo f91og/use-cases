@@ -1,0 +1,14 @@
+# https://www.runatlantis.io/docs/server-side-repo-config.html#use-cases
+# 这个文件是给atlantis的server命令用的
+repos:
+- id: /.*/
+  branch: /.*/
+  plan_requirements: [mergeable]
+  apply_requirements: [approved, mergeable]
+  import_requirements: [approved, mergeable]
+  
+  delete_source_branch_on_merge: true
+
+
+
+

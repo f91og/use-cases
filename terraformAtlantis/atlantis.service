@@ -1,0 +1,16 @@
+[Unit]
+Description=Atlantis
+After=network.target
+
+[Service]
+Environment=CLIENT_ID=xxx
+Environment=CLIENT_SECRET=xxx
+User=atlantis
+Group=atlantis
+WorkingDirectory=/home/atlantis
+ExecStart=/home/atlantis/atlantis server --atlantis-url="repo的webhook中设置的url" --bitbucket-user="xxx" --bitbucket-token="xxx" --bitbucket-webhook-secret="xxx" --bitbucket-base-url="xxx" --repo-allowlist="xxx" --repo-config=/home/atlantis/repos.yaml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
