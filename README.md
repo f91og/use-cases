@@ -2,15 +2,12 @@
 Store some common dev cases, for future reuse
 
 ## Done
-- k8s admissionwebhook deployment
+- k8s admissionWebhook
 - terraform custom provider
-- playwright 
+- playwright
+- terrafrom automation tool(atlantis)
 
-## ToDo
-- terrafrom ci pipeline 
-- cobra cli tool
-- local dev envrioment for cloud
+## ToDo 
+- local dev environment for cloud
 - etl data stream processing
 - ariflow job schedule
-
-
