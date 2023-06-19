@@ -15,5 +15,6 @@ deploy steps by systemd:
   - 在systemd里设置Environment，注意前面不要加ATLANTIS_，这部分的实际使用也和官网有出入
 - 文档上关于本地state file的设置貌似有错误，实际上是可以支持本地state的，在terraform里指定backend配置就可以了
 - 如何把custom provider给设置到atlantis里去？ => 把build出来的provider放到机器上的atlantis的工作目录里就可以了，和本地执行是一样的，不过应该cicd自动部署上去的
+- local_exec的docker权限问题 => 需要重启atlantis服务，在assign了权限之后
 
 
