@@ -1,22 +1,33 @@
 /* eslint-disable no-empty */
 /* eslint-disable no-unused-vars */
-import browser from './browser.js'
-// import fetch from 'node-fetch'
 import process from 'node:process';
+import {Command} from 'commander';
+import cliProgress from 'cli-progress';
 import fs from 'fs';
 import downloadWebpImg from './utils.js';
-import shell from 'shelljs'
+import launchBrowser from './browser.js';
 
-const args = process.argv.slice(2);
+const program = new Command();
+program
+  .version("0.0.1")
+  .option("-h, --headless", "run headless browser") // 命令参数中出现了--headless才是true
+  .option("-s, --startUrl [string]", "start chapter url")
+  .option("-c, --startChapter <number>", "start chapter num", 1)
+  .option("-t, --toChapter <number>", "to chapter num")
+  .option("-w, --timeout <number>", "wait time", 60000)
+  .parse(process.argv);
 
-if (args.length < 2) {
-    console.log("please input start url and start chapter num");
+const options = program.opts();
+console.log(options);
+
+if (!(options.startUrl || options.toChapter))  {
+    console.log("please input start url and to chapter num");
     process.exit(1);
 }
 
-const startChapterUrl = args[0];
-const startChapter = args.length == 3 ? args[2] : 1;
-const toChapter = parseInt(args[1]);
+const startChapterUrl = options.startUrl
+const startChapter = options.startChapter
+const toChapter = options.toChapter
 
 // const matchChapter = startChapterUrl.match(/\/(\d+)\.html/);
 // const chapterNumber = matchChapter ? matchChapter[1] : null;
@@ -44,6 +55,7 @@ const headers = {
     'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6'
 };
 
+const browser = await launchBrowser(options.headless, options.timeout)
 const page = await browser.newPage();
 await page.setExtraHTTPHeaders(headers);
 
@@ -60,37 +72,31 @@ const mangaFolder = `./manga/${manga}`;
 const restrictButton = await page.$('#checkAdult');
 if (restrictButton) {
     await restrictButton.click();
-    // await page.waitForLoadState();
 }
 
-for (let i = startChapter; i <= toChapter; i++) {
-    console.info(`saving chapter${i}`);
 
+for (let i = startChapter; i <= toChapter; i++) {
     const currentChapter = await page.$eval('h2', element => element.textContent);
     const lastPage = parseInt(await page.$eval('#pageSelect', select => select.options[select.options.length - 1].value));
 
-    // if (!lastPagesValue) {
-    //     console.error(`get pages for failed chapter${i}`); break;
-    // }
-
-    console.info(`pages for ${currentChapter}`, lastPage);
-
     if (!verifyChapter(currentChapter, `第${i.toString().padStart(2, '0')}卷`, lastPage)) break;
+
+    const url = page.url().split('#')[0];
+    console.info(`saving ${currentChapter}, total ${lastPage} pages, url: ${url}`);
+    const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+    bar.start(lastPage, 0);
 
     const chapterFolder = `${mangaFolder}/${currentChapter}`
     if (!fs.existsSync(chapterFolder)) {
         fs.mkdirSync(chapterFolder, { recursive: true });
     }
 
-    const url = page.url().split('#')[0];
-    console.log(`chapter url: ${url}`);
-
     // save images for a chapter
     for (let j = 1; j <= lastPage; j++) {
         // Get the image url for the current page
         const imageUrl = await page.$eval('#mangaFile', img => img.src);
 
-        console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
+        // console.log(`saving ${j}/${lastPage} image for chapter${i}: ${imageUrl}`);
 
         const image = `${chapterFolder}/${j.toString().padStart(3, '0')}_img.png`;
         try {
@@ -99,9 +105,8 @@ for (let i = startChapter; i <= toChapter; i++) {
                     'accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
                     'referer': url
                 }, image);
-            } else {
-                console.log(`skip ${image}`);
             }
+            bar.increment();
         } catch (err) {
             console.error(`saving ${image}: ${imageUrl} failed`, err);
             process.exit(1);
@@ -121,7 +126,7 @@ for (let i = startChapter; i <= toChapter; i++) {
     // }
     // console.log(chapterImageMap);
 
-    // zip all images 
+    // zip all images
     // const zipResult = shell.exec(`zip -0 -rq ./${mangaFolder}/chapter${i}.zip ./${mangaFolder}/*.png`);
     // if (zipResult.code !== 0) {
     //     console.error(`Error in zip images for chapter${i}`, zipResult.stderr);
@@ -130,11 +135,12 @@ for (let i = startChapter; i <= toChapter; i++) {
 
     // shell.exec(`rm ./${mangaFolder}/*.png`);
 
-    console.info(`saved chapter${i}`);
+    // console.info(`saved chapter${i}`);
+    bar.stop();
 
     if (i >= toChapter) break;
     await page.click('a.btn-red.nextC');
-    await page.waitForNavigation({ timeout: 600000 });
+    await page.waitForNavigation({timeout: 60000});
 }
 
 await browser.close()

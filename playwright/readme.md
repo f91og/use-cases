@@ -1,6 +1,16 @@
+**usage**
+```sh
+# download manga from chapter 1 to chapter 19
+node mangaSaver.js url 19 1
+
+# download manga from start to chapter 19, default start chapter is 1
+node mangaSaver.js url 19
+```
+
 **cmd**
 - directly run js: `node asakai.js`
-- record code: `npx playwright codegen --channel chrome url`
+- record code: `npx playwright codegen --channel chrome url --save-storage`
+- `pnpm install commander`
 
 **issues**
 - https://stackoverflow.com/questions/63588714/node9374-warning-to-load-an-es-module-set-type-module
@@ -14,11 +24,6 @@
 
   export default writeBase64toImg // 这种情况下导出体的名字要和上面的一致
   ``` 
-- js定义数组
-  ```js
-  const arr = [] // or const arr = ["ele"]
-  arr.push("ele")
-  ```
 - js保存网页图片的几种方法: https://intoli.com/blog/saving-images/
 - mocha单元测试工具
 - npx
@@ -38,3 +43,6 @@
     'text/Customize and automate'
   );
   ```
+
+import foo from 'module' imports the default export as foo => 导入module文件里的default export，并将其赋值给foo
+import {foo} from 'module' imports the named export foo => 导入module文件里的named export foo
