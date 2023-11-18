@@ -13,7 +13,7 @@ program
   .option("-h, --headless", "run headless browser") // 命令参数中出现了--headless才是true
   .option("-s, --startUrl [string]", "start chapter url")
   .option("-c, --startChapter <number>", "start chapter num", 1)
-  .option("-t, --toChapter <number>", "to chapter num")
+  .option("-t, --toChapter <number>", "to chapter num", 4)
   .option("-w, --timeout <number>", "wait time", 60000)
   .parse(process.argv);
 
@@ -25,9 +25,9 @@ if (!(options.startUrl || options.toChapter))  {
     process.exit(1);
 }
 
-const startChapterUrl = options.startUrl
-const startChapter = options.startChapter
-const toChapter = options.toChapter
+const startChapterUrl = options.startUrl;
+const startChapter = parseInt(options.startChapter);
+const toChapter = parseInt(options.toChapter);
 
 // const matchChapter = startChapterUrl.match(/\/(\d+)\.html/);
 // const chapterNumber = matchChapter ? matchChapter[1] : null;
@@ -65,15 +65,11 @@ const manga = await page.$eval('h1 a', element => element.textContent);
 console.log(`start to download manga ${manga}`);
 
 const mangaFolder = `./manga/${manga}`;
-// if (!fs.existsSync(mangaFolder)) {
-//     fs.mkdirSync(mangaFolder, { recursive: true });
-// }
 
 const restrictButton = await page.$('#checkAdult');
 if (restrictButton) {
     await restrictButton.click();
 }
-
 
 for (let i = startChapter; i <= toChapter; i++) {
     const currentChapter = await page.$eval('h2', element => element.textContent);
